@@ -291,4 +291,9 @@ abstract class CrudScreen extends Screen
 
         return false;
     }
+
+    public function model(): ?Model
+    {
+        return $this->model ?? null;
+    }
 }
