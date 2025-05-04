@@ -97,7 +97,7 @@ class EditScreen extends CrudScreen
 
         $computedLayout = collect();
         if (method_exists($this->resource, 'preFormLayout')) {
-            $computedLayout->merge(
+            $computedLayout = $computedLayout->merge(
                 $this->resource->preFormLayout($this)
             );
         }
@@ -111,7 +111,7 @@ class EditScreen extends CrudScreen
         );
 
         if (method_exists($this->resource, 'postFormLayout')) {
-            $computedLayout->merge(
+            $computedLayout = $computedLayout->merge(
                 $this->resource->postFormLayout($this)
             );
         }
