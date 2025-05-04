@@ -542,4 +542,14 @@ abstract class Resource
     {
         return true;
     }
+
+    /**
+     * Determines whether the actions at the header should be shown inside a DropDown or all in the same level.
+     *
+     * @return bool
+     */
+    public function actionsInsideDropdown(): bool
+    {
+        return true;
+    }
 }
