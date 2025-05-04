@@ -6,6 +6,7 @@ use Exception;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Orchid\Screen\Field;
 use Orchid\Screen\Layouts\Selection;
@@ -403,6 +404,19 @@ abstract class Resource
     public function actions(): array
     {
         return [];
+    }
+
+    /**
+     * Allows you to treat and/or return a dynamic action if no action matches.
+     * If you return a null value it will just proceed with the default behaviour of HTTP 405
+     *
+     * @param Request $request
+     *
+     * @return null|Action
+     */
+    public function noActionMatched(Request $request): ?Action
+    {
+        return null;
     }
 
     /**
