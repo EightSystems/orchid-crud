@@ -98,7 +98,7 @@ class CrudServiceProvider extends ServiceProvider
          * Checks if this is a Crud route.
          * If you pass the $resourceName parameter it will also check if the current resource matches.
          */
-        PlatformDashboard::macro('isCrudScreen', function (string $crudMethod, ?string $resourceName = null): bool {
+        PlatformDashboard::macro('isCrudScreen', function (string $crudMethod = '*', ?string $resourceName = null): bool {
             return request()->routeIs('platform.resource.'.$crudMethod) && (
                 $resourceName ? request()->route('resource') === $resourceName : true
             );

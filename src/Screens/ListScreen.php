@@ -9,6 +9,7 @@ use Orchid\Screen\Action;
 use Orchid\Screen\Actions\Link;
 use Orchid\Screen\Fields\CheckBox;
 use Orchid\Screen\Fields\Group;
+use Orchid\Screen\Layouts\Selection;
 use Orchid\Screen\TD;
 use Orchid\Support\Facades\Layout;
 
@@ -85,7 +86,13 @@ class ListScreen extends CrudScreen
                 ->alignRight()
                 ->cantHide()
                 ->render(function (Model $model) {
-                    return $this->getTableActions($model)
+                    if (method_exists($this->resource, 'tableActions')) {
+                        $tableActions = $this->resource->tableActions($model);
+                    } else {
+                        $tableActions = $this->getTableActions($model);
+                    }
+
+                    return $tableActions
                         ->set('align', 'justify-content-end align-items-center')
                         ->autoWidth()
                         ->render();
@@ -93,7 +100,14 @@ class ListScreen extends CrudScreen
         }
 
         return [
-            Layout::selection($this->resource->filters()),
+            tap(
+                Layout::selection($this->resource->filters()),
+                function (Selection $filtersLayout) {
+                    // Allows a resource to override the filters container template.
+                    $filtersLayout->template = $this->resource
+                        ->filtersContainerTemplate();
+                }
+            ),
             Layout::table('model', $grid->toArray()),
         ];
     }
