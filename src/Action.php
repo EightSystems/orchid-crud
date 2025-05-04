@@ -31,4 +31,14 @@ abstract class Action
     {
         return Str::of(static::class)->replace('\\', '-')->slug();
     }
+
+    /**
+     * If `true` it will allow you to have an action that doesn't require any model to trigger
+     *
+     * @return bool
+     */
+    public function allowsEmptyModelsCollection(): bool
+    {
+        return false;
+    }
 }
