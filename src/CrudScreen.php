@@ -155,12 +155,6 @@ abstract class CrudScreen extends Screen
     {
         $models = $request->models();
 
-        if ($models->isEmpty()) {
-            Toast::warning($request->resource()->emptyResourceForAction());
-
-            return back();
-        }
-
         /** @var Action $action */
         $action = $this->actions()
             ->filter(function (Action $action) use ($request) {
@@ -168,6 +162,12 @@ abstract class CrudScreen extends Screen
             })->whenEmpty(function () {
                 abort(405);
             })->first();
+
+        if ($models->isEmpty() && ! $action->allowsEmptyModelsCollection()) {
+            Toast::warning($request->resource()->emptyResourceForAction());
+
+            return back();
+        }
 
         return $action->handle($request->models());
     }
