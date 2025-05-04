@@ -159,8 +159,12 @@ abstract class CrudScreen extends Screen
         $action = $this->actions()
             ->filter(function (Action $action) use ($request) {
                 return $action->name() === $request->query('_action');
-            })->whenEmpty(function () {
-                abort(405);
+            })->whenEmpty(function (Collection $actionList) use (&$request) {
+                if ($dynamicAction = $this->resource->noActionMatched($request)) {
+                    $actionList->push($dynamicAction);
+                } else {
+                    abort(405);
+                }
             })->first();
 
         if ($models->isEmpty() && ! $action->allowsEmptyModelsCollection()) {
