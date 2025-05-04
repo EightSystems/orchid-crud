@@ -2,6 +2,7 @@
 
 namespace Orchid\Crud;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Orchid\Crud\Commands\ActionCommand;
@@ -40,43 +41,7 @@ class CrudServiceProvider extends ServiceProvider
      */
     public function boot(ResourceFinder $finder, Arbitrator $arbitrator): void
     {
-        PlatformDashboard::macro('getCrudScreenOperation', function (): string {
-            $currentScreen = Dashboard::getCurrentScreen();
-
-            if ($currentScreen) {
-                return match(true) {
-                    $currentScreen instanceof CreateScreen => 'create',
-                    $currentScreen instanceof EditScreen   => 'edit',
-                    $currentScreen instanceof ViewScreen   => 'view',
-                    $currentScreen instanceof ListScreen   => 'list',
-                    default                                => ''
-                };
-            } else {
-                return '';
-            }
-        });
-
-        PlatformDashboard::macro('isCrudScreen', function (string $crudMethod, ?string $resourceName = null): bool {
-            return request()->routeIs('platform.resource.'.$crudMethod) && (
-                $resourceName ? request()->route('resource') === $resourceName : true
-            );
-        });
-
-        PlatformDashboard::macro('isCrudListScreen', function (?string $resourceName = null): bool {
-            return PlatformDashboard::isCrudScreen('list', $resourceName);
-        });
-
-        PlatformDashboard::macro('isCrudCreateScreen', function (?string $resourceName = null): bool {
-            return PlatformDashboard::isCrudScreen('create', $resourceName);
-        });
-
-        PlatformDashboard::macro('isCrudEditScreen', function (?string $resourceName = null): bool {
-            return PlatformDashboard::isCrudScreen('edit', $resourceName);
-        });
-
-        PlatformDashboard::macro('isCrudViewScreen', function (?string $resourceName = null): bool {
-            return PlatformDashboard::isCrudScreen('view', $resourceName);
-        });
+        $this->setupDashboardFacadeHelpers();
 
         $resources = $finder
             ->setNamespace(app()->getNamespace() . 'Orchid\\Resources')
@@ -108,6 +73,68 @@ class CrudServiceProvider extends ServiceProvider
 
         $this->app->singleton(Arbitrator::class, static function () {
             return new Arbitrator();
+        });
+    }
+
+    protected function setupDashboardFacadeHelpers()
+    {
+        PlatformDashboard::macro('getCrudScreenOperation', function (): string {
+            $currentScreen = Dashboard::getCurrentScreen();
+
+            if ($currentScreen) {
+                return match(true) {
+                    $currentScreen instanceof CreateScreen => 'create',
+                    $currentScreen instanceof EditScreen   => 'edit',
+                    $currentScreen instanceof ViewScreen   => 'view',
+                    $currentScreen instanceof ListScreen   => 'list',
+                    default                                => ''
+                };
+            } else {
+                return '';
+            }
+        });
+
+        /**
+         * Checks if this is a Crud route.
+         * If you pass the $resourceName parameter it will also check if the current resource matches.
+         */
+        PlatformDashboard::macro('isCrudScreen', function (string $crudMethod, ?string $resourceName = null): bool {
+            return request()->routeIs('platform.resource.'.$crudMethod) && (
+                $resourceName ? request()->route('resource') === $resourceName : true
+            );
+        });
+
+        PlatformDashboard::macro('isCrudListScreen', function (?string $resourceName = null): bool {
+            return PlatformDashboard::isCrudScreen('list', $resourceName);
+        });
+
+        PlatformDashboard::macro('isCrudCreateScreen', function (?string $resourceName = null): bool {
+            return PlatformDashboard::isCrudScreen('create', $resourceName);
+        });
+
+        PlatformDashboard::macro('isCrudEditScreen', function (?string $resourceName = null): bool {
+            return PlatformDashboard::isCrudScreen('edit', $resourceName);
+        });
+
+        PlatformDashboard::macro('isCrudViewScreen', function (?string $resourceName = null): bool {
+            return PlatformDashboard::isCrudScreen('view', $resourceName);
+        });
+
+        /**
+         * Returns the model being used in the crud view, edit, and create screens.
+         * For the list screen, there's no single model in operation, so it will return null.
+         */
+        PlatformDashboard::macro('getCurrentCrudModel', function (): ?Model {
+            if (PlatformDashboard::isCrudScreen() && ! PlatformDashboard::isCrudListScreen()) {
+                /**
+                 * @var \Orchid\Crud\Screens\ViewScreen|\Orchid\Crud\Screens\EditScreen|\Orchid\Crud\Screens\CreateScreen
+                 */
+                $currentScreen = PlatformDashboard::getCurrentScreen();
+
+                return $currentScreen->model();
+            } else {
+                return null;
+            }
         });
     }
 }
