@@ -114,16 +114,22 @@ abstract class CrudScreen extends Screen
     }
 
     /**
-     * @return DropDown
+     * @return \Orchid\Screen\Contracts\Actionable[]
      */
-    protected function actionsButtons(): DropDown
+    protected function actionsButtons(): array
     {
         $actions = $this->availableActions();
 
-        return DropDown::make('Actions')
-            ->icon('bs.three-dots-vertical')
-            ->canSee($actions->isNotEmpty())
-            ->list($actions->toArray());
+        if ($this->resource->actionsInsideDropdown()) {
+            return [
+                DropDown::make('Actions')
+                    ->icon('bs.three-dots-vertical')
+                    ->canSee($actions->isNotEmpty())
+                    ->list($actions->toArray()),
+            ];
+        } else {
+            return $actions->toArray();
+        }
     }
 
     /**

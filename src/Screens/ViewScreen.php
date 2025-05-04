@@ -51,7 +51,7 @@ class ViewScreen extends CrudScreen
         }
 
         return [
-            $this->actionsButtons(),
+            ...$this->actionsButtons(),
 
             Link::make(__('Edit'))
                 ->icon('bs.pencil')
