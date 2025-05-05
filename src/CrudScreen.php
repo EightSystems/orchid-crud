@@ -314,20 +314,38 @@ abstract class CrudScreen extends Screen
 
     protected function callMethod(string $method, array $parameters = [])
     {
+        $route = request()->route();
+
+        $queryMethodUses = null;
+
         if (method_exists($this->resource::class, $method)) {
             $uses = $this->resource::class.'@'.$method;
+            $queryMethodUses = static::class.'@query';
         } else {
             $uses = static::class.'@'.$method;
         }
 
+        if ($queryMethodUses) {
+            $preparedParameters = self::prepareForExecuteMethod($queryMethodUses);
+            $queryData = App::call($queryMethodUses, $preparedParameters ?? $parameters);
+
+            foreach($queryData as $queryKey => $queryValue) {
+                $route->setParameter($queryKey, $queryValue);
+            }
+        }
+
         $preparedParameters = self::prepareForExecuteMethod($uses);
 
-        return App::call($uses, $preparedParameters ?? $parameters);
+        if ($queryMethodUses) {
+            return [
+                ...$queryData,
+                ...App::call($uses, $preparedParameters ?? $parameters),
+            ];
+        } else {
+            return App::call($uses, $preparedParameters ?? $parameters);
+        }
     }
 
-    /**
-     * We basically need to copy the parent `asyncBuild` function here because callMethod is private
-     */
     public function asyncBuild(string $method, string $slug)
     {
         Dashboard::setCurrentScreen($this, true);
@@ -337,7 +355,7 @@ abstract class CrudScreen extends Screen
         $resourceClassPublicMethods = (new \ReflectionClass($this->resource::class))
             ->getMethods(\ReflectionMethod::IS_PUBLIC);
 
-        $availableMethods->merge(
+        $availableMethods = $availableMethods->merge(
             collect($resourceClassPublicMethods)
                 // Keep it starting with `async` as it was previously with Orchid
                 ->filter(fn (\ReflectionMethod $method) => Str::startsWith($method->name, 'async'))

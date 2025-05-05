@@ -39,25 +39,28 @@ class AsyncController extends OrchidAsyncController
             '_template' => 'required|string',
         ]);
 
+        $callMethod = $request->input('_call');
+        $buildTemplate = $request->input('_template');
+
         // Fill the request resource and ID
         $request->route()->setParameter('resource', $resource);
         $request->route()->setParameter('id', $id);
 
-        $screen = Crypt::decryptString(
+        $screenName = Crypt::decryptString(
             $request->input('_screen')
         );
 
-        $screen = $this->bootScreen($screen, $request);
+        $screen = $this->bootScreen($screenName, $request);
 
         return $screen->asyncBuild(
-            $request->input('_call'),
-            $request->input('_template')
+            $callMethod,
+            $buildTemplate
         );
     }
 
     public function crudListener(Request $request, string $screen, string $layout, string $resource, ?string $id = null)
     {
-        $screen = Crypt::decryptString($screen);
+        $screenName = Crypt::decryptString($screen);
         $layout = Crypt::decryptString($layout);
         $resource = Crypt::decryptString($resource);
         $id = $id ? Crypt::decryptString($id) : null;
@@ -69,7 +72,7 @@ class AsyncController extends OrchidAsyncController
         // This allows us to use the same listener view without needing to copy it to this package
         $request->route()->action['as'] = 'platform.async.listener';
 
-        $screen = $this->bootScreen($screen, $request);
+        $screen = $this->bootScreen($screenName, $request);
 
         /** @var \Orchid\Screen\Layouts\Listener $layout */
         $layout = app($layout);

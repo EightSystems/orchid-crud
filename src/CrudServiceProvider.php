@@ -3,16 +3,19 @@
 namespace Orchid\Crud;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Orchid\Crud\Commands\ActionCommand;
 use Orchid\Crud\Commands\ResourceCommand;
+use Orchid\Crud\Layouts\ResourceModal;
 use Orchid\Crud\Screens\CreateScreen;
 use Orchid\Crud\Screens\EditScreen;
 use Orchid\Crud\Screens\ListScreen;
 use Orchid\Crud\Screens\ViewScreen;
 use Orchid\Platform\Dashboard as PlatformDashboard;
 use Orchid\Platform\Providers\FoundationServiceProvider;
+use Orchid\Screen\LayoutFactory;
 use Orchid\Support\Facades\Dashboard;
 
 class CrudServiceProvider extends ServiceProvider
@@ -42,6 +45,7 @@ class CrudServiceProvider extends ServiceProvider
     public function boot(ResourceFinder $finder, Arbitrator $arbitrator): void
     {
         $this->setupDashboardFacadeHelpers();
+        $this->setupLayoutFacadeExtensions();
 
         $resources = $finder
             ->setNamespace(app()->getNamespace() . 'Orchid\\Resources')
@@ -135,6 +139,15 @@ class CrudServiceProvider extends ServiceProvider
             } else {
                 return null;
             }
+        });
+    }
+
+    public function setupLayoutFacadeExtensions()
+    {
+        LayoutFactory::macro('resourceModal', function (string $key, $layouts): ResourceModal {
+            $layouts = Arr::wrap($layouts);
+
+            return new class($key, $layouts) extends ResourceModal {};
         });
     }
 }
