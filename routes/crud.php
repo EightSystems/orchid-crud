@@ -57,3 +57,6 @@ Route::prefix(config('platform.crud_prefix', '/crud'))->group(
 
 Route::post('/listener/{screen}/{layout}/{resource}/{id?}', [AsyncController::class, 'crudListener'])
     ->name('async.listener.crud');
+
+Route::post('/async/{resource}/{id?}', [AsyncController::class, 'crudLoad'])
+    ->name('async.crud');
