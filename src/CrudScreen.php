@@ -6,8 +6,11 @@ use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\App;
+use Illuminate\Support\Str;
 use Orchid\Crud\Exceptions\BehaviourChangers\ErrorHandledMessage;
 use Orchid\Crud\Exceptions\BehaviourChangers\InfoMessageChanger;
 use Orchid\Crud\Exceptions\BehaviourChangers\RedirectTo;
@@ -18,7 +21,9 @@ use Orchid\Crud\Requests\RestoreRequest;
 use Orchid\Crud\Requests\UpdateRequest;
 use Orchid\Screen\Action as ActionButton;
 use Orchid\Screen\Actions\DropDown;
+use Orchid\Screen\Repository;
 use Orchid\Screen\Screen;
+use Orchid\Support\Facades\Dashboard;
 use Orchid\Support\Facades\Toast;
 
 abstract class CrudScreen extends Screen
@@ -305,5 +310,67 @@ abstract class CrudScreen extends Screen
     public function model(): ?Model
     {
         return $this->model ?? null;
+    }
+
+    protected function callMethod(string $method, array $parameters = [])
+    {
+        if (method_exists($this->resource::class, $method)) {
+            $uses = $this->resource::class.'@'.$method;
+        } else {
+            $uses = static::class.'@'.$method;
+        }
+
+        $preparedParameters = self::prepareForExecuteMethod($uses);
+
+        return App::call($uses, $preparedParameters ?? $parameters);
+    }
+
+    /**
+     * We basically need to copy the parent `asyncBuild` function here because callMethod is private
+     */
+    public function asyncBuild(string $method, string $slug)
+    {
+        Dashboard::setCurrentScreen($this, true);
+
+        $availableMethods = static::getAvailableMethods();
+
+        $resourceClassPublicMethods = (new \ReflectionClass($this->resource::class))
+            ->getMethods(\ReflectionMethod::IS_PUBLIC);
+
+        $availableMethods->merge(
+            collect($resourceClassPublicMethods)
+                // Keep it starting with `async` as it was previously with Orchid
+                ->filter(fn (\ReflectionMethod $method) => Str::startsWith($method->name, 'async'))
+                ->mapWithKeys(fn (\ReflectionMethod $method) => [$method->name => $method])
+                ->except(get_class_methods(Resource::class))
+                ->keys()
+        );
+
+        abort_unless(
+            $availableMethods->contains($method),
+            Response::HTTP_BAD_REQUEST,
+            "Async method '{$method}' is unavailable."
+        );
+
+        abort_unless($this->checkAccess(request()), static::unaccessed());
+
+        $state = $this->extractState();
+        $this->fillPublicProperty($state);
+
+        $parameters = request()->collect()->merge([
+            'state'   => $state,
+        ])->all();
+
+        $repository = $this->callMethod($method, $parameters);
+
+        if (is_array($repository)) {
+            $repository = new Repository(array_merge($state->all(), $repository));
+        }
+
+        $view = $this->view($repository)
+            ->fragments(collect($slug)->push('screen-state')->all());
+
+        return response($view)
+            ->header('Content-Type', 'text/vnd.turbo-stream.html');
     }
 }
